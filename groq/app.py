@@ -187,7 +187,7 @@ from langchain_community.vectorstores import FAISS
 from dotenv import load_dotenv
 load_dotenv()
 
-# -------------------- CONFIG --------------------
+
 st.set_page_config(page_title="ChatGroq RAG", page_icon="🤖", layout="wide")
 
 # Custom CSS for better UI
@@ -211,6 +211,19 @@ st.set_page_config(page_title="ChatGroq RAG", page_icon="🤖", layout="wide")
 
 st.markdown("""
 <style>
+            
+/* Main app background */
+# .stApp {
+#     background-color: #0E1117;
+#     color: white;
+# }
+            
+    .stApp {
+    background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+    color:white;
+}
+            
+            
 .chat-user {
     background: linear-gradient(135deg, #4FACFE, #00F2FE);
     color: white;
@@ -243,14 +256,14 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# -------------------- API --------------------
 groq_api_key = os.getenv("GROQ_API_KEY")
 
 # -------------------- SESSION INIT --------------------
 if "vectors" not in st.session_state:
     st.session_state.embeddings = OllamaEmbeddings(model="nomic-embed-text")
     
-    loader = WebBaseLoader("https://en.wikipedia.org/wiki/Main_Page")
+    loader = WebBaseLoader("https://en.wikipedia.org/wiki/")
+    # loader = WebBaseLoader(f"https://en.wikipedia.org/wiki/{user_prompt.replace(' ', '_')}")
     docs = loader.load()
 
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
@@ -262,8 +275,9 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 
-# -------------------- MAIN UI --------------------
-st.title("🤖 ChatGroq RAG")
+st.title("🤖 ChatGroq")
+# st.title("🤖 SaathiX")
+st.markdown("### Ask me anything....")
 
 # Display chat history
 for msg in st.session_state.messages:
@@ -272,10 +286,10 @@ for msg in st.session_state.messages:
     else:
         st.markdown(f"<div class='chat-bot'>🤖 {msg['content']}</div>", unsafe_allow_html=True)
 
-# Input box
+
 user_prompt = st.chat_input("Ask anything...")
 
-# -------------------- LLM --------------------
+
 llm = ChatGroq(
     groq_api_key=groq_api_key,
     model_name="llama-3.3-70b-versatile"
@@ -283,7 +297,7 @@ llm = ChatGroq(
 
 retriever = st.session_state.vectors.as_retriever()
 
-# -------------------- MAIN LOGIC --------------------
+
 if user_prompt:
     
     # Save user message
@@ -306,19 +320,23 @@ if user_prompt:
         )
 
         formatted_prompt = f"""
-        You are a helpful assistant.
-        Answer the question based on provided context only.
-        Please provide the most accurate response based on the question.
+        You are a helpful AI assistant.
 
-Chat History:
-{history_text}
+        Instructions:
+        - First, try to answer using the provided context.
+        - If the context does NOT contain enough information, use your own knowledge to answer.
+        - Do NOT say "context does not contain information" unless absolutely necessary.
+        - Give a clear and complete answer.
 
-Context:
-{context}
+        Chat History:
+        {history_text}
 
-Question:
-{user_prompt}
-"""
+        Context:
+        {context}
+
+        Question:
+        {user_prompt}
+        """
 
         # Streaming response
         response_placeholder = st.empty()
@@ -342,7 +360,6 @@ Question:
     # Save bot response
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-    # Response time
     st.caption(f"⏱ Response time: {end - start:.2f} sec")
 
     # # Snippets
